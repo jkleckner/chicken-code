@@ -21,6 +21,7 @@
 
 #import <AppKit/AppKit.h>
 #import "rfbproto.h"
+#import "FrameBufferClip.h"
 
 typedef union _FrameBufferColor {
     unsigned char	_u8;

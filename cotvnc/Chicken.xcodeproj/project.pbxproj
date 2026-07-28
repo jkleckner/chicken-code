@@ -19,6 +19,7 @@
 		7F7A93EF05E71B5C00E20416 /* FilterReader.h in Headers */ = {isa = PBXBuildFile; fileRef = F5DC71B2033DB4A801A8010C /* FilterReader.h */; };
 		7F7A93F005E71B5C00E20416 /* FrameBuffer.h in Headers */ = {isa = PBXBuildFile; fileRef = F5DC71B4033DB4A801A8010C /* FrameBuffer.h */; };
 		7F7A93F105E71B5C00E20416 /* FrameBufferDrawing.h in Headers */ = {isa = PBXBuildFile; fileRef = F5DC71B6033DB4A801A8010C /* FrameBufferDrawing.h */; };
+		FBC1000000000000000000BB /* FrameBufferClip.h in Headers */ = {isa = PBXBuildFile; fileRef = FBC1000000000000000000AA /* FrameBufferClip.h */; };
 		7F7A93F205E71B5C00E20416 /* FrameBufferUpdateReader.h in Headers */ = {isa = PBXBuildFile; fileRef = F5DC71B7033DB4A801A8010C /* FrameBufferUpdateReader.h */; };
 		7F7A93F305E71B5C00E20416 /* GradientFilter.h in Headers */ = {isa = PBXBuildFile; fileRef = F5DC71B9033DB4A801A8010C /* GradientFilter.h */; };
 		7F7A93F405E71B5C00E20416 /* GrayScaleFrameBuffer.h in Headers */ = {isa = PBXBuildFile; fileRef = F5DC71BB033DB4A801A8010C /* GrayScaleFrameBuffer.h */; };
@@ -331,6 +332,7 @@
 		F5DC71B4033DB4A801A8010C /* FrameBuffer.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = FrameBuffer.h; sourceTree = "<group>"; };
 		F5DC71B5033DB4A801A8010C /* FrameBuffer.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = FrameBuffer.m; sourceTree = "<group>"; };
 		F5DC71B6033DB4A801A8010C /* FrameBufferDrawing.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = FrameBufferDrawing.h; sourceTree = "<group>"; };
+		FBC1000000000000000000AA /* FrameBufferClip.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = FrameBufferClip.h; sourceTree = "<group>"; };
 		F5DC71B7033DB4A801A8010C /* FrameBufferUpdateReader.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = FrameBufferUpdateReader.h; sourceTree = "<group>"; };
 		F5DC71B8033DB4A801A8010C /* FrameBufferUpdateReader.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = FrameBufferUpdateReader.m; sourceTree = "<group>"; };
 		F5DC71B9033DB4A801A8010C /* GradientFilter.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = GradientFilter.h; sourceTree = "<group>"; };
@@ -636,6 +638,7 @@
 				F5DC71B3033DB4A801A8010C /* FilterReader.m */,
 				F5DC71B4033DB4A801A8010C /* FrameBuffer.h */,
 				F5DC71B5033DB4A801A8010C /* FrameBuffer.m */,
+				FBC1000000000000000000AA /* FrameBufferClip.h */,
 				F5DC71B6033DB4A801A8010C /* FrameBufferDrawing.h */,
 				F5DC71B7033DB4A801A8010C /* FrameBufferUpdateReader.h */,
 				F5DC71B8033DB4A801A8010C /* FrameBufferUpdateReader.m */,
@@ -720,6 +723,7 @@
 				7F7A93EE05E71B5C00E20416 /* EncodingReader.h in Headers */,
 				7F7A93EF05E71B5C00E20416 /* FilterReader.h in Headers */,
 				7F7A93F005E71B5C00E20416 /* FrameBuffer.h in Headers */,
+				FBC1000000000000000000BB /* FrameBufferClip.h in Headers */,
 				7F7A93F105E71B5C00E20416 /* FrameBufferDrawing.h in Headers */,
 				7F7A93F205E71B5C00E20416 /* FrameBufferUpdateReader.h in Headers */,
 				7F7A93F305E71B5C00E20416 /* GradientFilter.h in Headers */,

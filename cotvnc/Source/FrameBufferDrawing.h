@@ -452,20 +452,17 @@ printf("draw x=%f y=%f w=%f h=%f at x=%f y=%f\n", aRect.origin.x, aRect.origin.y
     r.origin.y = floor(aRect.origin.y);
     r.size.width = ceil(aRect.origin.x + aRect.size.width) - r.origin.x;
     r.size.height = ceil(aRect.origin.y + aRect.size.height) - r.origin.y;
-    if(NSMaxX(r) >= size.width) {
-        r.size.width = size.width - r.origin.x;
-    }
+    /* Clip to the framebuffer before deriving any pointer from the rectangle.
+     * The rectangle arrives in framebuffer coordinates derived from the view's
+     * geometry, which can outrun the framebuffer's own size while a resize is
+     * in flight, so it may start or end outside the buffer entirely. yshift is
+     * the number of rows clipped from the bottom; the on-screen destination
+     * moves up by that much to keep the top edge of the image in place. */
     int yshift = 0;
-    if(NSMaxY(r) >= size.height) {
-        r.size.height -= 1;
-        yshift = 1;
-    }
-    
-    // Validate coordinates before calculating pointer
-    if(r.origin.x < 0 || r.origin.y < 0 || r.size.width <= 0 || r.size.height <= 0) {
+    if(!FrameBufferClipRect(&r, size, &yshift)) {
         return;
     }
-    
+
     start = pixels + ((int)r.origin.y) * (int)size.width + (int)r.origin.x;
     r.origin.x = floor(aPoint.x);   // Also round the on-screen location to
     r.origin.y = floor(aPoint.y)+yshift;   // align with pixel boundaries
