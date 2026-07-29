@@ -242,7 +242,7 @@ ButtonNumberToRFBButtomMask( unsigned int buttonNumber )
 	[self _updateCapsLockStateIfNecessary];
 
 	NSString *characters = [theEvent characters];
-	unsigned int modifiers = [theEvent modifierFlags];
+	unsigned int modifiers = (unsigned int)[theEvent modifierFlags];
 	if ( [[KeyEquivalentManager defaultManager] performEquivalentWithCharacters: characters modifiers: modifiers] )
 	{
 		[self discardAllPendingQueueEntries];
@@ -425,7 +425,7 @@ ButtonNumberToRFBButtomMask( unsigned int buttonNumber )
         NSEventModifierFlagHelp};
     int i;
 
-	_queuedModifiers = newState;
+	_queuedModifiers = (unsigned int)newState;
 	
     for (i = 0; i < sizeof(masks) / sizeof(masks[0]); i++) {
         if (masks[i] & pressed)
@@ -472,7 +472,7 @@ ButtonNumberToRFBButtomMask( unsigned int buttonNumber )
 - (void)pasteString: (NSString *)string
 {
 	[self _updateCapsLockStateIfNecessary];
-	int index, strLength = [string length];
+	NSUInteger index, strLength = [string length];
 	NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     unsigned oldModifiers = _pressedModifiers;
 	BOOL shiftKeyDown = NO;
@@ -569,7 +569,7 @@ ButtonNumberToRFBButtomMask( unsigned int buttonNumber )
 	unsigned int eventsToDelay = eventsToDelay3 > eventsToDelay2 ? eventsToDelay3 : eventsToDelay2;
 	if ( eventsToDelay )
 	{
-		unsigned int pendingEvents = [_pendingEvents count];
+		NSUInteger pendingEvents = [_pendingEvents count];
 		if ( eventsToDelay < pendingEvents )
 		{
 			NSRange range = NSMakeRange( 0, pendingEvents - eventsToDelay );
@@ -685,7 +685,7 @@ ButtonNumberToRFBButtomMask( unsigned int buttonNumber )
 
 - (void)sendPendingQueueEntriesInRange: (NSRange)range
 {
-	unsigned int i, last = NSMaxRange(range);
+	NSUInteger i, last = NSMaxRange(range);
 	
 	for ( i = range.location; i < last; ++i )
 	{
@@ -752,7 +752,7 @@ ButtonNumberToRFBButtomMask( unsigned int buttonNumber )
 
 - (unsigned int)handleClickWhileHoldingForButton: (unsigned int)button
 {
-	int eventCount = [_pendingEvents count];
+	NSUInteger eventCount = [_pendingEvents count];
     unsigned    cwhModifier = [_profile clickWhileHoldingModifierForButton:button];
 	if ( eventCount > 2 )
 		return 0;
@@ -856,7 +856,7 @@ ButtonNumberToRFBButtomMask( unsigned int buttonNumber )
 
 - (unsigned int)handleTapModifierAndClickForButton: (unsigned int)button
 {
-	int eventIndex, eventCount = [_pendingEvents count];
+	NSUInteger eventIndex, eventCount = [_pendingEvents count];
 	NSTimeInterval time1 = 0, time2;
     unsigned    emulModifier = [_profile tapAndClickModifierForButton:button];
 	
@@ -907,7 +907,8 @@ ButtonNumberToRFBButtomMask( unsigned int buttonNumber )
 		}
 	}
 
-	return eventCount;
+	/* The queue length is bounded by the handful of events emulation buffers. */
+	return (unsigned int)eventCount;
 }
 
 @end
