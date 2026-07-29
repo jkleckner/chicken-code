@@ -82,7 +82,15 @@ enum {
 
 
 
-    [NSBundle loadNibNamed:@"RFBConnection.nib" owner:self];
+    NSArray *topLevel = nil;
+    if (![[NSBundle mainBundle] loadNibNamed:@"RFBConnection"
+                                       owner:self
+                             topLevelObjects:&topLevel]) {
+        NSLog(@"Could not load the RFBConnection nib");
+        [self release];
+        return nil;
+    }
+    _nibTopLevelObjects = [topLevel retain];
     [rfbView registerForDraggedTypes:[NSArray arrayWithObjects:NSPasteboardTypeString, NSPasteboardTypeFileURL, nil]];
 
     password = [[connection password] retain];
@@ -142,6 +150,7 @@ enum {
 	[window close];
 
     [_connectionStartDate release];
+    [_nibTopLevelObjects release];
     [super dealloc];
 }
 

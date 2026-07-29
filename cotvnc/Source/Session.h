@@ -70,6 +70,11 @@ ConnectionWaiterDelegate>
     NSTimer                         *_reconnectSheetTimer;
     ConnectionWaiter                *_reconnectWaiter;
 
+    /* Top-level nib objects. -loadNibNamed:owner:topLevelObjects:
+     * returns them autoreleased, unlike the class method it replaced, so
+     * hold them for as long as this object lives. */
+    NSArray                         *_nibTopLevelObjects;
+
 
 }
 

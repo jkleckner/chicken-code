@@ -92,6 +92,16 @@ static int const kPrefsVersion = 0x00000002;
 }
 
 
+/* This class is a process-lifetime singleton, so this never actually runs --
+ * but the nib objects are retained now, and an unbalanced retain is the kind
+ * of thing that bites once a class stops being a singleton. */
+- (void)dealloc
+{
+	[_nibTopLevelObjects release];
+	[super dealloc];
+}
+
+
 #pragma mark -
 #pragma mark Settings
 

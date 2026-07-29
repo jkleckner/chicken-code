@@ -115,7 +115,14 @@ NSString *kPrefs_IntervalBeforeReconnect_Key = @"IntervalBeforeReconnect";
 {
 	if ( mWindow )
 		return;
-	[NSBundle loadNibNamed: @"Preferences" owner: self];
+	NSArray *topLevel = nil;
+	if (![[NSBundle mainBundle] loadNibNamed: @"Preferences"
+	                                   owner: self
+	                         topLevelObjects: &topLevel]) {
+		NSLog(@"Could not load the Preferences nib");
+		return;
+	}
+	_nibTopLevelObjects = [topLevel retain];
 	
 	// set our controls' default values
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];

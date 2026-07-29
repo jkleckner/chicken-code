@@ -41,7 +41,15 @@
 {
 	if (self = [super init])
 	{
-		[NSBundle loadNibNamed:@"ServerDisplay.nib" owner:self];
+		NSArray *topLevel = nil;
+		if (![[NSBundle mainBundle] loadNibNamed:@"ServerDisplay"
+		                                   owner:self
+		                         topLevelObjects:&topLevel]) {
+			NSLog(@"Could not load the ServerDisplay nib");
+			[self release];
+			return nil;
+		}
+		_nibTopLevelObjects = [topLevel retain];
 		
 		selfTerminate = NO;
 		removedSaveCheckbox = NO;
@@ -99,6 +107,7 @@
     [connectionWaiter release];
 		
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
+    [_nibTopLevelObjects release];
     
     [super dealloc];
 }

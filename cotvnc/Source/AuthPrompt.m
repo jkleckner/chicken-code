@@ -25,9 +25,23 @@
 {
     if (self = [super init]) {
         delegate = aDelegate;
-        [NSBundle loadNibNamed:@"AuthPrompt" owner:self];
+        NSArray *topLevel = nil;
+        if (![[NSBundle mainBundle] loadNibNamed:@"AuthPrompt"
+                                           owner:self
+                                 topLevelObjects:&topLevel]) {
+            NSLog(@"Could not load the AuthPrompt nib");
+            [self release];
+            return nil;
+        }
+        _nibTopLevelObjects = [topLevel retain];
     }
     return self;
+}
+
+- (void)dealloc
+{
+    [_nibTopLevelObjects release];
+    [super dealloc];
 }
 
 - (void)runSheetOnWindow:(NSWindow *)window
