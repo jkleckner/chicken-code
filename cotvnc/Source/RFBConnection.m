@@ -54,7 +54,7 @@
 
 @interface RFBConnection (Private)
 
-- (void)sendStringToServersClipboard:(const char *)cStr length:(unsigned)len;
+- (void)sendStringToServersClipboard:(const char *)cStr length:(NSUInteger)len;
 
 @end
 
@@ -395,7 +395,7 @@
         }
         
         while(length) {
-            consumed = [currentReader readBytes:bytes length:length];
+            consumed = [currentReader readBytes:bytes length:(unsigned int)length];
 
             if (consumed == 0) {
                 [self terminateConnection: NSLocalizedString(@"ProtocolError", nil)];
@@ -834,7 +834,18 @@ static NSData *compressZlib(NSData *uncompressedData) {
         return;
     }
     
-    unsigned int msgSz = 12 + [compressed length];
+    /* msgSz is 32 bits but the memcpy below fills the buffer using the full
+     * 64-bit length, so letting this wrap would under-allocate and overflow
+     * the heap -- and clipboard contents are user-controlled. The extended
+     * clipboard length field is a negated int32, which bounds us further. */
+    NSUInteger compressedLen = [compressed length];
+    if (compressedLen > (NSUInteger)(INT32_MAX - 4)) {
+        NSLog(@"Clipboard data too large to send (%lu bytes)",
+              (unsigned long)compressedLen);
+        return;
+    }
+
+    unsigned int msgSz = 12 + (unsigned int)compressedLen;
     unsigned char *buf = malloc(msgSz);
     if (!buf) {
         NSLog(@"Out of memory allocating clipboard send buffer");
@@ -846,13 +857,13 @@ static NSData *compressZlib(NSData *uncompressedData) {
     buf[2] = 0;
     buf[3] = 0;
     
-    int32_t lenVal = htonl(-(4 + (int32_t)[compressed length]));
+    int32_t lenVal = htonl(-(4 + (int32_t)compressedLen));
     memcpy(buf + 4, &lenVal, 4);
     
     uint32_t flagsVal = htonl(0x10000001);
     memcpy(buf + 8, &flagsVal, 4);
     
-    memcpy(buf + 12, [compressed bytes], [compressed length]);
+    memcpy(buf + 12, [compressed bytes], compressedLen);
     
     [self writeBytes:buf length:msgSz];
     free(buf);
@@ -886,12 +897,20 @@ static NSData *compressZlib(NSData *uncompressedData) {
         [self sendStringToServersClipboard:cStr length:strlen(cStr)];
 }
 
-- (void)sendStringToServersClipboard:(const char *)cStr length:(unsigned)len
+- (void)sendStringToServersClipboard:(const char *)cStr length:(NSUInteger)len
 {
     if ([server_ viewOnly])
         return;
-    
-    unsigned int            msgSz = sizeof(rfbClientCutTextMsg) + len;
+
+    /* msg->length is a 32-bit wire field and msgSz sizes the malloc that the
+     * memcpy below fills, so refuse anything that would not survive the
+     * narrowing instead of wrapping into an undersized buffer. */
+    if (len > UINT32_MAX - sizeof(rfbClientCutTextMsg)) {
+        NSLog(@"Clipboard data too large to send (%lu bytes)", (unsigned long)len);
+        return;
+    }
+
+    unsigned int            msgSz = (unsigned int)(sizeof(rfbClientCutTextMsg) + len);
     rfbClientCutTextMsg     *msg = malloc(msgSz);
 
     if (msg == NULL) {
@@ -900,7 +919,7 @@ static NSData *compressZlib(NSData *uncompressedData) {
     }
 
     msg->type = rfbClientCutText;
-    msg->length = htonl(len);
+    msg->length = htonl((uint32_t)len);
     memcpy((char *)(msg + 1), cStr, len);
     [self writeBytes:(unsigned char *)msg length:msgSz];
     free(msg);
@@ -932,14 +951,14 @@ static NSData *compressZlib(NSData *uncompressedData) {
 
 - (void)reallyWriteBytes:(unsigned char*)bytes length:(unsigned int)length
 {
-    int result;
-    int written = 0;
+    ssize_t result;
+    unsigned int written = 0;
 
     do {
         result = write([socketHandler fileDescriptor], bytes + written, length);
         if(result >= 0) {
-            length -= result;
-            written += result;
+            length -= (unsigned int)result;
+            written += (unsigned int)result;
         } else {
             if(errno == EAGAIN) {
                 continue;

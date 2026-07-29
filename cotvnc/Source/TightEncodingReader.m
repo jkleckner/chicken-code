@@ -269,7 +269,8 @@ static void JpegSetSrcManager(j_decompress_ptr cinfo, CARD8* compressedData, int
 		cinfo.err = jpeg_std_error(&jerr);
 		jpeg_create_decompress(&cinfo);
 		cinfo.src = &jpegSrcManager;
-		JpegSetSrcManager(&cinfo, (CARD8*)[data bytes], [data length]);
+		/* Bounded by the CARD32 length read off the wire. */
+		JpegSetSrcManager(&cinfo, (CARD8*)[data bytes], (int)[data length]);
 		jpeg_read_header(&cinfo, TRUE);
 		cinfo.out_color_space = JCS_RGB;
 		jpeg_start_decompress(&cinfo);
@@ -297,7 +298,9 @@ static void JpegSetSrcManager(j_decompress_ptr cinfo, CARD8* compressedData, int
 	}
     stream = zStream + (cntl & 0x03);
     stream->next_in = (unsigned char*)[data bytes];
-    stream->avail_in = [data length];
+    /* avail_in is a 32-bit uInt by zlib's API; the data length comes from a
+     * CARD32 read off the wire, so it cannot exceed 32 bits. */
+    stream->avail_in = (uInt)[data length];
     do {
         stream->next_out = [zBuffer mutableBytes] + zBufPos;
         stream->avail_out = Z_BUFSIZE - zBufPos;
