@@ -435,7 +435,7 @@ enum {
 
 
 
-	contentView = [scrollView contentView];
+	contentView = (NSClipView *)[scrollView contentView];
     [contentView scrollToPoint: [contentView constrainScrollPoint: NSMakePoint(0.0, _maxSize.height - [scrollView contentSize].height)]];
     [scrollView reflectScrolledClipView: contentView];
 
