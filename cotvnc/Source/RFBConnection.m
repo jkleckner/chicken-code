@@ -694,19 +694,25 @@
 
 - (BOOL)pasteFromPasteboard:(NSPasteboard*)pb
 {
-    id types, theType;
-	NSString *str;
-	
-    types = [NSArray arrayWithObjects:NSPasteboardTypeString, NSFilenamesPboardType, nil];
-    if((theType = [pb availableTypeFromArray:types]) == nil) {
+	NSString *str = [pb stringForType:NSPasteboardTypeString];
+
+    if (str == nil) {
+        /* Dropped files paste as their path, which is what the deprecated
+         * NSFilenamesPboardType branch did. Finder usually puts a string
+         * representation on the pasteboard too, so this is the fallback. */
+        NSDictionary *options = [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:YES]
+                                                            forKey:NSPasteboardURLReadingFileURLsOnlyKey];
+        NSArray *urls = [pb readObjectsForClasses:[NSArray arrayWithObject:[NSURL class]]
+                                          options:options];
+        if ([urls count] > 0)
+            str = [[urls objectAtIndex:0] path];
+    }
+
+    if (str == nil) {
         NSLog(@"No supported pasteboard type\n");
         return NO;
     }
-    str = [pb stringForType:theType];
-    if([str isKindOfClass:[NSArray class]]) {
-        str = [(id)str objectAtIndex:0];
-    }
-    
+
 	[_eventFilter pasteString: str];
     return YES;
 }

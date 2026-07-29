@@ -83,7 +83,7 @@ enum {
 
 
     [NSBundle loadNibNamed:@"RFBConnection.nib" owner:self];
-    [rfbView registerForDraggedTypes:[NSArray arrayWithObjects:NSPasteboardTypeString, NSFilenamesPboardType, nil]];
+    [rfbView registerForDraggedTypes:[NSArray arrayWithObjects:NSPasteboardTypeString, NSPasteboardTypeFileURL, nil]];
 
     password = [[connection password] retain];
 
