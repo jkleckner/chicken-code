@@ -39,17 +39,19 @@ static KeyChain* defaultKeyChain = nil;
         [self removeGenericPasswordForService:service account:account];
         return TRUE;
     } else {
+        /* SecKeychain takes UInt32 lengths; service names, accounts and
+         * passwords are all far below 4 GB. */
         const char  *pass = [password UTF8String];
         itemref = [self _genericPasswordReferenceForService:service
                         account:account];
 
         if (itemref)
-            ret = SecKeychainItemModifyContent(itemref, NULL, strlen(pass), pass);
+            ret = SecKeychainItemModifyContent(itemref, NULL, (UInt32)strlen(pass), pass);
         else {
             const char  *serv = [service UTF8String];
             const char  *acc = [account UTF8String];
-            ret = SecKeychainAddGenericPassword(NULL, strlen(serv), serv,
-                        strlen(acc), acc, strlen(pass), pass, NULL);
+            ret = SecKeychainAddGenericPassword(NULL, (UInt32)strlen(serv), serv,
+                        (UInt32)strlen(acc), acc, (UInt32)strlen(pass), pass, NULL);
         }
         if (ret)
             NSLog(@"Couldn't save to keychain: %d", ret);
@@ -70,7 +72,7 @@ static KeyChain* defaultKeyChain = nil;
         return @"";
     }
     
-    ret = SecKeychainFindGenericPassword(NULL, strlen(serv), serv, strlen(acc),
+    ret = SecKeychainFindGenericPassword(NULL, (UInt32)strlen(serv), serv, (UInt32)strlen(acc),
                 acc, &length, &p, NULL);
 
     if (!ret) {
@@ -102,7 +104,7 @@ static KeyChain* defaultKeyChain = nil;
     const char  *acc = [account UTF8String];
     SecKeychainItemRef itemref = NULL;
 
-    SecKeychainFindGenericPassword(NULL, strlen(serv), serv, strlen(acc), acc,
+    SecKeychainFindGenericPassword(NULL, (UInt32)strlen(serv), serv, (UInt32)strlen(acc), acc,
             NULL, NULL, &itemref);
     
     return itemref;
