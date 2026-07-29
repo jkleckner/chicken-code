@@ -79,6 +79,6 @@ Primitive readers (`CARD8Reader`, `CARD16Reader`, `CARD32Reader`, `ByteBlockRead
 ## Conventions and gotchas
 
 - UI lives in nibs under `Resources/Base.lproj/`; user-facing strings in `Resources/Localizable.xcstrings`.
-- The version appears twice: `CFBundleShortVersionString`/`CFBundleVersion` in `Resources/Info.plist`, and the `_CHICKEN_VERSION_` build setting (used for the .dmg filename) in every configuration of `Chicken.xcodeproj`. They currently disagree — Info.plist says 2026.7, the build setting says 2026.6. Bump both.
+- The version appears twice: `CFBundleShortVersionString`/`CFBundleVersion` in `Resources/Info.plist`, and the `_CHICKEN_VERSION_` build setting (used for the .dmg filename) in all four configurations of `Chicken.xcodeproj`. Both currently say 2026.7. Nothing derives one from the other, so bump all five sites together or the .dmg filename and the bundle version drift apart.
 - Development happens on `moe`; the GitHub Actions workflow builds and analyzes only that branch and its PRs.
 - `debug.h` provides `FULLDebug`, a no-op unless `FULL_DEBUG` is defined; `VNCViewer_main.m` has a `DEBUG_MEMORY` block that enables zombies.

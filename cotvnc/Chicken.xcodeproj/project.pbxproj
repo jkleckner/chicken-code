@@ -1199,7 +1199,7 @@
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				ZERO_LINK = NO;
-				_CHICKEN_VERSION_ = 2026.6;
+				_CHICKEN_VERSION_ = 2026.7;
 			};
 			name = Development;
 		};
@@ -1242,7 +1242,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				_CHICKEN_VERSION_ = 2026.6;
+				_CHICKEN_VERSION_ = 2026.7;
 			};
 			name = Deployment;
 		};
@@ -1286,7 +1286,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				_CHICKEN_VERSION_ = 2026.6;
+				_CHICKEN_VERSION_ = 2026.7;
 			};
 			name = Default;
 		};
@@ -1368,7 +1368,7 @@
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				ZERO_LINK = NO;
-				_CHICKEN_VERSION_ = 2026.6;
+				_CHICKEN_VERSION_ = 2026.7;
 			};
 			name = "Universal Fast Development";
 		};
