@@ -100,8 +100,6 @@ ConnectionWaiterDelegate>
     //window delegate messages
 - (void)windowDidBecomeKey:(NSNotification *)aNotification;
 - (void)windowDidResignKey:(NSNotification *)aNotification;
-- (void)windowDidDeminiaturize:(NSNotification *)aNotification;
-- (void)windowDidMiniaturize:(NSNotification *)aNotification;
 - (void)windowWillClose:(NSNotification *)aNotification;
 - (void)windowDidResize:(NSNotification *)aNotification;
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)proposedFrameSize;

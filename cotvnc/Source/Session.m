@@ -579,6 +579,14 @@ enum {
     return [window isKeyWindow];
 }
 
+/* --------------------------------------------------------------------------------- */
+/* RFBConnectionManager sets the update interval on the session rather than on
+ * the connection, so forward it along. */
+- (void)setFrameBufferUpdateSeconds: (float)seconds
+{
+    [connection setFrameBufferUpdateSeconds: seconds];
+}
+
 /* Window delegate methods */
 
 - (void)windowDidChangeOcclusionState:(NSNotification *)aNotification
