@@ -14,7 +14,7 @@ static KeyChain* defaultKeyChain = nil;
 
 @interface KeyChain (KeyChainPrivate)
 
--(SecKeychainItemRef)_genericPasswordReferenceForService:(NSString *)service account:(NSString*)account;
+- (NSMutableDictionary *)_queryForService:(NSString *)service account:(NSString*)account;
 
 @end
 
@@ -29,85 +29,93 @@ static KeyChain* defaultKeyChain = nil;
 - (BOOL)setGenericPassword:(NSString*)password forService:(NSString *)service account:(NSString*)account
 {
     OSStatus ret;
-    SecKeychainItemRef itemref;
-    
+
     if ([service length] == 0 || [account length] == 0) {
         return NO;
     }
-    
+
     if (!password || [password length] == 0) {
         [self removeGenericPasswordForService:service account:account];
         return TRUE;
-    } else {
-        /* SecKeychain takes UInt32 lengths; service names, accounts and
-         * passwords are all far below 4 GB. */
-        const char  *pass = [password UTF8String];
-        itemref = [self _genericPasswordReferenceForService:service
-                        account:account];
-
-        if (itemref)
-            ret = SecKeychainItemModifyContent(itemref, NULL, (UInt32)strlen(pass), pass);
-        else {
-            const char  *serv = [service UTF8String];
-            const char  *acc = [account UTF8String];
-            ret = SecKeychainAddGenericPassword(NULL, (UInt32)strlen(serv), serv,
-                        (UInt32)strlen(acc), acc, (UInt32)strlen(pass), pass, NULL);
-        }
-        if (ret)
-            NSLog(@"Couldn't save to keychain: %d", ret);
-        return ret == 0;
     }
+
+    NSDictionary *query = [self _queryForService:service account:account];
+    NSDictionary *attributesToUpdate =
+        [NSDictionary dictionaryWithObject:[password dataUsingEncoding:NSUTF8StringEncoding]
+                                    forKey:(id)kSecValueData];
+
+    /* Update an existing item if there is one, mirroring what the old
+     * SecKeychainItemModifyContent / SecKeychainAddGenericPassword pair did.
+     * Doing it in this order avoids leaving a duplicate behind. */
+    ret = SecItemUpdate((CFDictionaryRef)query, (CFDictionaryRef)attributesToUpdate);
+
+    if (ret == errSecItemNotFound) {
+        NSMutableDictionary *newItem = [[query mutableCopy] autorelease];
+        [newItem addEntriesFromDictionary:attributesToUpdate];
+        ret = SecItemAdd((CFDictionaryRef)newItem, NULL);
+    }
+
+    if (ret)
+        NSLog(@"Couldn't save to keychain: %d", (int)ret);
+    return ret == errSecSuccess;
 }
 
 - (NSString*)genericPasswordForService:(NSString *)service account:(NSString*)account
 {
-    OSStatus ret;
-    UInt32 length;
-    void *p = NULL;
-    NSString *string = @"";
-    const char  *serv = [service UTF8String];
-    const char  *acc = [account UTF8String];
-    
     if ([service length] == 0 || [account length] == 0) {
         return @"";
     }
-    
-    ret = SecKeychainFindGenericPassword(NULL, (UInt32)strlen(serv), serv, (UInt32)strlen(acc),
-                acc, &length, &p, NULL);
 
-    if (!ret) {
-        string = [[NSString alloc] initWithBytes:p length:length
-                encoding:NSUTF8StringEncoding];
-        [string autorelease];
-    }
-    if (p)
-        SecKeychainItemFreeContent(NULL, p);
-    return string;
+    NSMutableDictionary *query = [self _queryForService:service account:account];
+    [query setObject:(id)kCFBooleanTrue forKey:(id)kSecReturnData];
+    [query setObject:(id)kSecMatchLimitOne forKey:(id)kSecMatchLimit];
+
+    CFDataRef passwordData = NULL;
+    OSStatus ret = SecItemCopyMatching((CFDictionaryRef)query,
+                                       (CFTypeRef *)&passwordData);
+
+    if (ret != errSecSuccess || passwordData == NULL)
+        return @"";
+
+    /* SecItemCopyMatching hands back a retained copy, unlike the old API's
+     * pointer into keychain-owned storage that SecKeychainItemFreeContent
+     * released. */
+    NSString *string = [[NSString alloc] initWithData:(NSData *)passwordData
+                                             encoding:NSUTF8StringEncoding];
+    CFRelease(passwordData);
+
+    return string ? [string autorelease] : @"";
 }
 
 - (void)removeGenericPasswordForService:(NSString *)service account:(NSString*)account
 {
-    SecKeychainItemRef itemref; 
+    if ([service length] == 0 || [account length] == 0) {
+        return;
+    }
 
-    itemref = [self _genericPasswordReferenceForService:service account:account];
-    if (itemref)
-        SecKeychainItemDelete(itemref);
+    OSStatus ret = SecItemDelete((CFDictionaryRef)[self _queryForService:service
+                                                                 account:account]);
+
+    /* Deleting something that is not there matches the old behaviour, which
+     * simply skipped the delete when no item reference came back. */
+    if (ret != errSecSuccess && ret != errSecItemNotFound)
+        NSLog(@"Couldn't remove keychain item: %d", (int)ret);
 }
 
 @end
 
 @implementation KeyChain (KeyChainPrivate)
 
-- (SecKeychainItemRef)_genericPasswordReferenceForService:(NSString *)service account:(NSString*)account
+/* The attributes identifying one of our passwords. These are the same service
+ * and account that SecKeychainAddGenericPassword recorded, so items saved by
+ * earlier versions are found unchanged. */
+- (NSMutableDictionary *)_queryForService:(NSString *)service account:(NSString*)account
 {
-    const char  *serv = [service UTF8String];
-    const char  *acc = [account UTF8String];
-    SecKeychainItemRef itemref = NULL;
-
-    SecKeychainFindGenericPassword(NULL, (UInt32)strlen(serv), serv, (UInt32)strlen(acc), acc,
-            NULL, NULL, &itemref);
-    
-    return itemref;
+    return [NSMutableDictionary dictionaryWithObjectsAndKeys:
+                (id)kSecClassGenericPassword,   (id)kSecClass,
+                service,                        (id)kSecAttrService,
+                account,                        (id)kSecAttrAccount,
+                nil];
 }
 
 @end
