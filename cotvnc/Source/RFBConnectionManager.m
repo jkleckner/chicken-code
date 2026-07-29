@@ -189,7 +189,11 @@ static NSString *kPrefs_LastHost_Key = @"RFBLastHost";
 			}
 		}
 		else if ([arg hasPrefix:@"--FullScreen"])
-			[cmdlineServer setFullscreen: YES];
+			/* Custom fullscreen support was removed in 2026.7; macOS native
+			 * fullscreen handles this. Accept and ignore the flag so existing
+			 * scripts keep working instead of dying on an unknown argument. */
+			NSLog(@"--FullScreen is no longer supported and has been ignored. "
+			      @"Use the window's native fullscreen button instead.");
 		else if ([arg hasPrefix:@"--ViewOnly"])
 			[cmdlineServer setViewOnly: YES];
 		else if ([arg hasPrefix:@"--Display"])
@@ -287,7 +291,6 @@ static NSString *kPrefs_LastHost_Key = @"RFBLastHost";
     fprintf(stderr, "--PasswordFile <password-file>\n");
     fprintf(stderr, "--Profile <profile-name>\n");
     fprintf(stderr, "--Display <display-number>\n");
-    fprintf(stderr, "--FullScreen\n");
     fprintf(stderr, "--Shared\n");
 	fprintf(stderr, "--ViewOnly\n");
     fprintf(stderr, "--Listen\n");
