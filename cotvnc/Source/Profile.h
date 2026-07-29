@@ -155,7 +155,7 @@ struct encoding {
 - (void)setTapAndClickTimeout:(NSTimeInterval)timeout
                     forButton:(unsigned)button;
 - (void)setEncodingEnabled:(BOOL)enabled atIndex:(int)index;
-- (void)moveEncodingFrom:(int)src to:(int)dst;
+- (void)moveEncodingFrom:(NSInteger)src to:(NSInteger)dst;
 - (void)setCopyRectEnabled:(BOOL)enabled;
 - (void)setJpegEncodingEnabled:(BOOL)enabled;
 - (void)setJpegLevel:(int)level;

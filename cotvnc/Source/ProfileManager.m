@@ -295,7 +295,7 @@ static NSString *kProfileDragEntry = @"net.sourceforge.chicken.ProfileDragEntry"
 }
 
 
-- (NSDragOperation)tableView:(NSTableView *)tableView validateDrop:(id <NSDraggingInfo>)info proposedRow:(int)row proposedDropOperation:(NSTableViewDropOperation)operation
+- (NSDragOperation)tableView:(NSTableView *)tableView validateDrop:(id <NSDraggingInfo>)info proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)operation
 {
 	if ( mEncodingTableView == tableView )
 	{
@@ -314,7 +314,7 @@ static NSString *kProfileDragEntry = @"net.sourceforge.chicken.ProfileDragEntry"
 }
 
 
-- (BOOL)tableView:(NSTableView *)tableView acceptDrop:(id <NSDraggingInfo>)info row:(int)row dropOperation:(NSTableViewDropOperation)operation
+- (BOOL)tableView:(NSTableView *)tableView acceptDrop:(id <NSDraggingInfo>)info row:(NSInteger)row dropOperation:(NSTableViewDropOperation)operation
 {
 	if ( mEncodingTableView == tableView )
 	{
@@ -322,10 +322,18 @@ static NSString *kProfileDragEntry = @"net.sourceforge.chicken.ProfileDragEntry"
 		if ( [pboard availableTypeFromArray: [NSArray arrayWithObject: kProfileDragEntry]] )
 		{
 			NSData *data = [pboard dataForType: kProfileDragEntry];
-			
+
+			/* -writeRowsWithIndexes: is the only writer of this type, so the
+			 * payload is one NSInteger -- but it arrives from the pasteboard,
+			 * so check the length before dereferencing rather than trusting it. */
+			if ( [data length] != sizeof(NSInteger) )
+				return NO;
+			NSInteger srcRow;
+			[data getBytes: &srcRow length: sizeof(srcRow)];
+
 			Profile* profile = [self _currentProfile];
-            [profile moveEncodingFrom:*(int *)[data bytes] to:row];
-			
+            [profile moveEncodingFrom:srcRow to:row];
+
             [[ProfileDataManager sharedInstance] saveProfile:profile];
 			[mEncodingTableView reloadData];
 			return YES;
@@ -343,10 +351,10 @@ static NSString *kProfileDragEntry = @"net.sourceforge.chicken.ProfileDragEntry"
 		NSUInteger firstRow = [rowIndexes firstIndex];
 		if ( firstRow == NSNotFound )
 			return NO;
-		int rowIndex = (int)firstRow;
+		NSInteger rowIndex = (NSInteger)firstRow;
 
         NSData *data = [[NSData alloc] initWithBytes:&rowIndex
-                                              length:sizeof(int)];
+                                              length:sizeof(rowIndex)];
 		[pboard declareTypes: [NSArray arrayWithObject: kProfileDragEntry] owner: nil];
 		[pboard setData: data forType: kProfileDragEntry];
         [data release];

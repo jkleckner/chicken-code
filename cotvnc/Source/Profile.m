@@ -743,8 +743,20 @@ ButtonNumberToArrayIndex( NSInteger buttonNumber )
 /* Reorders the encodings so that the one at src is now at dst, and the relative
  * order of the others is unchanged. Note that the index dst is counted
  * including the encoding being at src. */
-- (void)moveEncodingFrom:(int)src to:(int)dst
+- (void)moveEncodingFrom:(NSInteger)src to:(NSInteger)dst
 {
+    /* Both indices originate in table-view rows, and dst may legitimately be
+     * numEncodings (a drop past the last row). Anything outside that range
+     * would index the encodings array out of bounds, and src == dst would
+     * hand the memmove below a negative -- so unsigned huge -- length. The
+     * table view's -validateDrop: already rejects those, but this is the
+     * method that would corrupt memory if it ever stopped doing so. */
+    NSInteger count = (NSInteger)numEncodings;
+    if ( src < 0 || src >= count || dst < 0 || dst > count || src == dst ) {
+        NSLog(@"Bad encoding move: %ld -> %ld", (long)src, (long)dst);
+        return;
+    }
+
     struct encoding e = encodings[src];
     if (src > dst) 
         memmove(encodings + dst + 1, encodings + dst,
