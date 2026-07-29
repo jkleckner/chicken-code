@@ -28,6 +28,7 @@
 #import "RFBConnection.h"
 #import "RFBConnectionManager.h"
 #import "RFBView.h"
+#import "ScrollerNeed.h"
 #import "SshWaiter.h"
 #define XK_MISCELLANY
 #include "keysymdef.h"
@@ -649,13 +650,24 @@ enum {
 - (void)windowDidResize:(NSNotification *)aNotification
 {
     if ([connection serverSupportsSetDesktopSize] && ![self viewOnly]) {
-        // update the server with the new desktop size
+        // ask the server to match the new window size
         [connection writeSetDesktopSize:[[window contentView] frame].size];
-        return;
+        /* Deliberately no early return: that is only a request, and a server
+         * that ignores it leaves the framebuffer oversized. Set the scrollers
+         * up from the framebuffer we actually have. See ScrollerNeed.h. */
     }
 
-	[scrollView setHasHorizontalScroller:horizontalScroll];
-	[scrollView setHasVerticalScroller:verticalScroll];
+    BOOL needsHorizontal = NO, needsVertical = NO;
+    ScrollerNeedForContent([rfbView frame].size.width,
+                           [rfbView frame].size.height,
+                           [scrollView frame].size.width,
+                           [scrollView frame].size.height,
+                           [NSScroller scrollerWidthForControlSize:NSControlSizeRegular
+                                                     scrollerStyle:NSScrollerStyleLegacy],
+                           &needsHorizontal, &needsVertical);
+
+	[scrollView setHasHorizontalScroller:needsHorizontal];
+	[scrollView setHasVerticalScroller:needsVertical];
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)aNotification
