@@ -99,11 +99,18 @@ vncDecryptPasswdFromFile(char *fname)
 {
     FILE *fp;
     int i, ch;
+    int weOpenedFp = 0;		/* only close what we opened; never close stdin */
     unsigned char *passwd = (unsigned char *)malloc(9);
 
+    if (passwd == NULL)
+	return NULL;
+
     if (strcmp(fname, "-") != 0) {
-	if ((fp = fopen(fname,"r")) == NULL)
+	if ((fp = fopen(fname,"r")) == NULL) {
+	    free(passwd);
 	    return NULL;
+	}
+	weOpenedFp = 1;
     } else {
 	fp = stdin;
     }
@@ -115,11 +122,13 @@ vncDecryptPasswdFromFile(char *fname)
 	passwd[i] = ch;
     }
 
-    if (fp != stdin)
+    if (weOpenedFp)
 	fclose(fp);
 
-    if (i != 8)                 /* Could not read eight bytes */
+    if (i != 8) {               /* Could not read eight bytes */
+	free(passwd);
 	return NULL;
+    }
 
     deskey(s_fixedkey, DE1);
     des(passwd, passwd);
