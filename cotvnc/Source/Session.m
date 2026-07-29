@@ -186,20 +186,34 @@ enum {
             userInfo:nil repeats:NO] retain];
 }
 
-- (void)connectionTerminatedSheetDidEnd:(NSWindow *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
+/* Tells the user the connection died, optionally offering to reconnect.
+ * One might reasonably argue that this should be handled by the connection
+ * manager. */
+- (void)showConnectionTerminated:(NSString *)aReason allowReconnect:(BOOL)allowReconnect
 {
-	/* One might reasonably argue that this should be handled by the connection manager. */
-	switch (returnCode) {
-		case NSAlertDefaultReturn:
-			break;
-		case NSAlertAlternateReturn:
-            [self beginReconnect];
-            return;
-		default:
-			NSLog(@"Unknown alert returnvalue: %d", returnCode);
-			break;
-	}
-    [[RFBConnectionManager sharedManager] removeConnection:self];
+	NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+
+	[alert setMessageText: NSLocalizedString( @"ConnectionTerminated", nil )];
+	[alert setInformativeText: aReason ? aReason : @""];
+	[alert addButtonWithTitle: NSLocalizedString( @"Okay", nil )];
+	if (allowReconnect)
+		[alert addButtonWithTitle: NSLocalizedString( @"Reconnect", nil )];
+
+	/* The session can be torn down while the sheet is up -- that is what
+	 * "connection terminated" means -- so hold a reference until the handler
+	 * is done with self. */
+	[self retain];
+	[alert beginSheetModalForWindow: window
+	              completionHandler: ^(NSModalResponse returnCode) {
+		/* First button is Okay, second is Reconnect. These are the NSAlert
+		 * response codes (1000, 1001), not the NSAlertDefaultReturn family
+		 * (1, 0) that the old didEndSelector compared against. */
+		if (allowReconnect && NSAlertSecondButtonReturn == returnCode)
+			[self beginReconnect];
+		else
+			[[RFBConnectionManager sharedManager] removeConnection:self];
+		[self release];
+	}];
 }
 
 - (void)connectionProblem
@@ -231,12 +245,13 @@ enum {
         } else {
             /* Server doesn't support reconnect, so we have to interrupt the
              * password sheet to show an error*/
-            [NSApp endSheet:passwordSheet];
+            [window endSheet:passwordSheet];
 
-            NSBeginAlertSheet(NSLocalizedString(@"ConnectionTerminated", nil),
-                    NSLocalizedString(@"Okay", nil), nil, nil, window, self,
-                    @selector(connectionTerminatedSheetDidEnd:returnCode:contextInfo:),
-                    nil, nil, @"%@", aReason);
+            /* The password sheet is still tearing down; presenting on top of
+             * it now would be dropped, so wait for the run loop to finish. */
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self showConnectionTerminated:aReason allowReconnect:NO];
+            });
         }
     } else {
         if(aReason) {
@@ -252,10 +267,7 @@ enum {
 			}
 			else {
 				// Ask what to do
-				NSString *header = NSLocalizedString( @"ConnectionTerminated", nil );
-				NSString *okayButton = NSLocalizedString( @"Okay", nil );
-				NSString *reconnectButton =  NSLocalizedString( @"Reconnect", nil );
-				NSBeginAlertSheet(header, okayButton, supportReconnect ? reconnectButton : nil, nil, window, self, @selector(connectionTerminatedSheetDidEnd:returnCode:contextInfo:), nil, nil, @"%@", aReason);
+				[self showConnectionTerminated:aReason allowReconnect:supportReconnect];
 			}
         } else {
             [[RFBConnectionManager sharedManager] removeConnection:self];
@@ -296,10 +308,9 @@ enum {
         [rememberNewPassword setState: [server_ rememberPassword]];
     else
         [rememberNewPassword setHidden:YES];
-    [NSApp beginSheet:passwordSheet modalForWindow:window
-           modalDelegate:self
-           didEndSelector:@selector(passwordEnteredFor:returnCode:contextInfo:)
-           contextInfo:nil];
+    [window beginSheet:passwordSheet completionHandler:^(NSModalResponse returnCode) {
+        [passwordSheet orderOut:self];
+    }];
 }
 
 /* User entered new password */
@@ -320,21 +331,15 @@ enum {
         [connection setPassword:password];
     else
         [self beginReconnect];
-    [NSApp endSheet:passwordSheet];
+    [window endSheet:passwordSheet];
 }
 
 /* User cancelled chance to enter new password */
 - (IBAction)dontReconnect:(id)sender
 {
-    [NSApp endSheet:passwordSheet];
+    [window endSheet:passwordSheet];
     [self connectionProblem];
     [self endSession];
-}
-
-- (void)passwordEnteredFor:(NSWindow *)wind returnCode:(int)retCode
-            contextInfo:(void *)info
-{
-    [passwordSheet orderOut:self];
 }
 
 /* Close the connection and then reconnect */
@@ -742,10 +747,9 @@ enum {
 
 - (void)createReconnectSheet:(id)sender
 {
-    [NSApp beginSheet:_reconnectPanel modalForWindow:window
-           modalDelegate:self
-           didEndSelector:@selector(reconnectEnded:returnCode:contextInfo:)
-           contextInfo:nil];
+    [window beginSheet:_reconnectPanel completionHandler:^(NSModalResponse returnCode) {
+        [_reconnectPanel orderOut:self];
+    }];
     [_reconnectIndicator startAnimation:self];
 
     [_reconnectSheetTimer release];
@@ -757,19 +761,13 @@ enum {
     [_reconnectWaiter cancel];
     [_reconnectWaiter release];
     _reconnectWaiter = nil;
-    [NSApp endSheet:_reconnectPanel];
+    [window endSheet:_reconnectPanel];
     [self endSession];
-}
-
-- (void)reconnectEnded:(id)sender returnCode:(int)retCode
-           contextInfo:(void *)info
-{
-    [_reconnectPanel orderOut:self];
 }
 
 - (void)connectionPrepareForSheet
 {
-    [NSApp endSheet:_reconnectPanel];
+    [window endSheet:_reconnectPanel];
     [_reconnectSheetTimer invalidate];
     [_reconnectSheetTimer release];
     _reconnectSheetTimer = nil;
@@ -789,7 +787,7 @@ enum {
 /* Reconnect attempt has succeeded */
 - (void)connectionSucceeded:(RFBConnection *)newConnection
 {
-    [NSApp endSheet:_reconnectPanel];
+    [window endSheet:_reconnectPanel];
     [_reconnectSheetTimer invalidate];
     [_reconnectSheetTimer release];
     _reconnectSheetTimer = nil;
