@@ -26,13 +26,6 @@
 #import <poll.h>
 #import <unistd.h>
 
-@interface ConnectionWaiter(Private)
-
-- (void)errorDidEnd:(NSWindow *)sheet returnCode:(NSInteger)returnCode
-        contextInfo:(void *)info;
-
-@end
-
 @implementation ConnectionWaiter
 
 + (ConnectionWaiter *)waiterForServer:(id<IServerData>)aServer
@@ -84,7 +77,7 @@
 
 - (void)serverDidNotResolve
 {
-    [self error:@"Could not resolve" message:@""];
+    [self error:NSLocalizedString(@"AddressResolveFailed", nil) message:@""];
 }
 
 - (id<IServerData>)server
@@ -295,22 +288,25 @@
     if (errorStr)
         theAction = errorStr;
 
-	NSString *ok = NSLocalizedString( @"Okay", nil );
-    if (window)
-        NSBeginAlertSheet(theAction, ok, nil, nil, window, self,
-                @selector(errorDidEnd:returnCode:contextInfo:), NULL, NULL,
-                @"%@", message);
-    else {
-        NSInteger ret;
-        ret = NSRunAlertPanel(theAction, message, ok, NULL, NULL, NULL);
-        [self errorDidEnd:nil returnCode:ret contextInfo:nil];
-    }
-}
+    NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+    [alert setMessageText: theAction];
+    [alert setInformativeText: message];
+    [alert addButtonWithTitle: NSLocalizedString( @"Okay", nil )];
 
-- (void)errorDidEnd:(NSWindow *)sheet returnCode:(NSInteger)returnCode
-        contextInfo:(void *)info
-{
-    [delegate connectionFailed];
+    if (window) {
+        /* The sheet outlives this method, and -connectionFailed typically
+         * makes our owner release us, so hold a reference until the handler
+         * has finished with self. */
+        [self retain];
+        [alert beginSheetModalForWindow: window
+                      completionHandler: ^(NSModalResponse returnCode) {
+            [delegate connectionFailed];
+            [self release];
+        }];
+    } else {
+        [alert runModal];
+        [delegate connectionFailed];
+    }
 }
 
 @end
