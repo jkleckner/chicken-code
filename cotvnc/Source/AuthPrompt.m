@@ -46,34 +46,30 @@
 
 - (void)runSheetOnWindow:(NSWindow *)window
 {
-    [NSApp beginSheet:panel modalForWindow:window modalDelegate:self
-        didEndSelector:@selector(passwordEnteredFor:returnCode:contextInfo:)
-        contextInfo:nil];
+    /* Balanced by the -autorelease in the handler: the prompt has to outlive
+     * this method, and nothing else owns it while the sheet is up. */
     [self retain];
+    [window beginSheet:panel completionHandler:^(NSModalResponse returnCode) {
+        [panel orderOut:self];
+        [self autorelease];
+    }];
 }
 
 - (void)stopSheet
 {
-    [NSApp endSheet:panel];
+    [[panel sheetParent] endSheet:panel];
 }
 
 - (IBAction)enterPassword:(id)sender
 {
     [delegate authPasswordEntered:[passwordField stringValue]];
-    [NSApp endSheet:panel];
+    [[panel sheetParent] endSheet:panel];
 }
 
 - (IBAction)cancel:(id)sender
 {
-    [NSApp endSheet:panel];
+    [[panel sheetParent] endSheet:panel];
     [delegate authCancelled];
-}
-
-- (IBAction)passwordEnteredFor:(NSWindow *)wind returnCode:(int)retCode
-    contextInfo:(void *)info
-{
-    [panel orderOut:self];
-    [self autorelease];
 }
 
 @end

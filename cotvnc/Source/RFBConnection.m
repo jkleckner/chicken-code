@@ -888,14 +888,23 @@ static NSData *compressZlib(NSData *uncompressedData) {
 
 #if 0 // just don't send if not convertible
     if (cStr == NULL) {
-        NSBeginAlertSheet(NSLocalizedString(@"PasteConversionHeader", nil), 
-                          NSLocalizedString(@"PasteAnyways", nil),
-                          NSLocalizedString(@"Cancel", nil), nil,
-                          [rfbView window], self,
-                          @selector(pasteConfirmation:returnCode:contextInfo:),
-                          nil, [str retain], /* This retain is balanced by the
-                                              * release in pasteConfirmation: */
-                          NSLocalizedString(@"PasteConversionBody", nil));
+        NSAlert     *alert = [[[NSAlert alloc] init] autorelease];
+        NSString    *pasteString = [str retain];
+
+        [alert setMessageText:NSLocalizedString(@"PasteConversionHeader", nil)];
+        [alert setInformativeText:NSLocalizedString(@"PasteConversionBody", nil)];
+        [alert addButtonWithTitle:NSLocalizedString(@"PasteAnyways", nil)];
+        [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
+
+        [alert beginSheetModalForWindow:[rfbView window]
+                      completionHandler:^(NSModalResponse returnCode) {
+            if (NSAlertFirstButtonReturn == returnCode) {
+                NSData  *data = [pasteString dataUsingEncoding:NSISOLatin1StringEncoding
+                                          allowLossyConversion:YES];
+                [self sendStringToServersClipboard:[data bytes] length:[data length]];
+            }
+            [pasteString release];
+        }];
     } else
 #else
     if (cStr != NULL)
@@ -929,17 +938,6 @@ static NSData *compressZlib(NSData *uncompressedData) {
     memcpy((char *)(msg + 1), cStr, len);
     [self writeBytes:(unsigned char *)msg length:msgSz];
     free(msg);
-}
-
-- (void)pasteConfirmation:(NSWindow *)sheet returnCode:(int)code
-              contextInfo:(NSString *)str
-{
-    if (code == NSAlertDefaultReturn) {
-        NSData  *data = [str dataUsingEncoding:NSISOLatin1StringEncoding
-                          allowLossyConversion:YES];
-        [self sendStringToServersClipboard:[data bytes] length:[data length]];
-    }
-    [str release]; // balances retain in sendPasteboardToServer:
 }
 
 - (EventFilter *)eventFilter
