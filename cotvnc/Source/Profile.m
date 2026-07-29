@@ -229,14 +229,16 @@ ButtonNumberToArrayIndex( NSInteger buttonNumber )
 
         obj = [info objectForKey: kProfile_TintBack_Key];
         if (obj)
-            tintBack = [[NSKeyedUnarchiver unarchiveObjectWithData:obj]
-                                retain];
+            tintBack = [[NSKeyedUnarchiver unarchivedObjectOfClass:[NSColor class]
+                                                          fromData:obj
+                                                             error:NULL] retain];
         if (tintBack == nil)
             tintBack = [[NSColor clearColor] retain];
 
         if ((obj = [info objectForKey:kProfile_TintFront_Key]) != nil)
-            tintFront = [[NSKeyedUnarchiver unarchiveObjectWithData:obj]
-                                retain];
+            tintFront = [[NSKeyedUnarchiver unarchivedObjectOfClass:[NSColor class]
+                                                           fromData:obj
+                                                              error:NULL] retain];
         if (tintFront == nil)
             tintFront = [tintBack retain];
 	}
@@ -408,10 +410,19 @@ ButtonNumberToArrayIndex( NSInteger buttonNumber )
 
     [dict setObject:[NSNumber numberWithInteger:pixelFormatIndex]
              forKey:kProfile_PixelFormat_Key];
-    [dict setObject:[NSKeyedArchiver archivedDataWithRootObject:tintFront]
-             forKey:kProfile_TintFront_Key];
-    [dict setObject:[NSKeyedArchiver archivedDataWithRootObject:tintBack]
-             forKey:kProfile_TintBack_Key];
+    /* NSColor adopts NSSecureCoding, so the archive stays readable by the
+     * class-checked reader above and by older builds. Guard the result:
+     * -setObject:forKey: raises on a nil value. */
+    NSData *tintFrontData = [NSKeyedArchiver archivedDataWithRootObject:tintFront
+                                                  requiringSecureCoding:YES
+                                                                  error:NULL];
+    NSData *tintBackData = [NSKeyedArchiver archivedDataWithRootObject:tintBack
+                                                 requiringSecureCoding:YES
+                                                                 error:NULL];
+    if (tintFrontData)
+        [dict setObject:tintFrontData forKey:kProfile_TintFront_Key];
+    if (tintBackData)
+        [dict setObject:tintBackData forKey:kProfile_TintBack_Key];
 
     return [dict autorelease];
 }

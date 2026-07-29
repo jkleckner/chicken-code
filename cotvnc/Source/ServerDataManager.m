@@ -31,6 +31,34 @@
 #define RFB_SAVED_SERVERS   @"SavedServers"
 #define RFB_SAVED_SERVERS2  @"SavedServers2"
 
+/* Reads a server archive written by version 2.1 or earlier. ServerDataManager
+ * does not adopt NSSecureCoding, so the class-checked reader cannot be used
+ * here; an instance unarchiver with secure coding switched off reads those old
+ * archives unchanged, which is what keeps an upgrading user's servers. */
+static id UnarchiveLegacyServerData(NSData *data)
+{
+	NSError *error = nil;
+	NSKeyedUnarchiver *unarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:data
+																				error:&error];
+
+	if (nil == unarchiver) {
+		NSLog(@"Could not open legacy server archive: %@", error);
+		return nil;
+	}
+
+	[unarchiver setRequiresSecureCoding:NO];
+
+	id object = [unarchiver decodeTopLevelObjectForKey:NSKeyedArchiveRootObjectKey
+												 error:&error];
+	[unarchiver finishDecoding];
+	[unarchiver release];
+
+	if (nil == object)
+		NSLog(@"Could not decode legacy server archive: %@", error);
+
+	return object;
+}
+
 @implementation ServerDataManager
 
 static ServerDataManager* gInstance = nil;
@@ -151,8 +179,7 @@ static ServerDataManager* gInstance = nil;
             NSData *data = [defaults objectForKey:RFB_SAVED_SERVERS];
             if ( data )
             {
-                gInstance = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-                [gInstance retain];
+                gInstance = [UnarchiveLegacyServerData(data) retain];
             }
         }
 		
@@ -160,8 +187,10 @@ static ServerDataManager* gInstance = nil;
 		{
 			NSString *storePath = [NSHomeDirectory() stringByAppendingPathComponent:RFB_PREFS_LOCATION];
 			
-			gInstance = [NSKeyedUnarchiver unarchiveObjectWithFile:storePath];
-			[gInstance retain];
+			NSData *storeData = [NSData dataWithContentsOfFile:storePath
+													   options:0
+														 error:NULL];
+			gInstance = storeData ? [UnarchiveLegacyServerData(storeData) retain] : nil;
 			if( nil == gInstance )
 			{
 				// Didn't find any preferences under the new serialization system,
