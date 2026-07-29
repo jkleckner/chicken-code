@@ -321,12 +321,25 @@ static NSString *kPrefs_LastHost_Key = @"RFBLastHost";
 
 - (NSString *)selectedServerName
 {
-    return [mOrderedServerNames objectAtIndex:[serverList selectedRow]];
+    /* -[NSTableView selectedRow] is -1 when nothing is selected -- an empty
+     * server list, or a selection that has not settled after a delete -- and
+     * -objectAtIndex: wraps that to a huge index. */
+    NSInteger row = [serverList selectedRow];
+
+    if (row < 0 || row >= (NSInteger)[mOrderedServerNames count])
+        return nil;
+
+    return [mOrderedServerNames objectAtIndex:row];
 }
 
 - (id<IServerData>)selectedServer
 {
-	return [[ServerDataManager sharedInstance] getServerWithName:[self selectedServerName]];
+	NSString *name = [self selectedServerName];
+
+	if (nil == name)
+		return nil;	/* -objectForKey: does not accept a nil key */
+
+	return [[ServerDataManager sharedInstance] getServerWithName:name];
 }
 
 // Selects a server by name. Returns whether or not it found the named server
@@ -381,11 +394,11 @@ static NSString *kPrefs_LastHost_Key = @"RFBLastHost";
 // We're done with the connecting to a server with the dialog
 - (void)connectionDone
 {
-    NSString    *host;
+    NSString    *host = [self selectedServerName];
 
-    host = [mOrderedServerNames objectAtIndex:[serverList selectedRow]];
-    [[NSUserDefaults standardUserDefaults] setObject:host
-                                              forKey:kPrefs_LastHost_Key];
+    if (nil != host)
+        [[NSUserDefaults standardUserDefaults] setObject:host
+                                                  forKey:kPrefs_LastHost_Key];
     [[self window] orderOut:self];
 }
 
@@ -479,7 +492,12 @@ static NSString *kPrefs_LastHost_Key = @"RFBLastHost";
 
 - (IBAction)deleteSelectedServer:(id)sender
 {
-	[[ServerDataManager sharedInstance] removeServer:[self selectedServer]];
+	id<IServerData> server = [self selectedServer];
+
+	if (nil == server)
+		return;
+
+	[[ServerDataManager sharedInstance] removeServer:server];
 	
 	[self reloadServerArray];
 }
