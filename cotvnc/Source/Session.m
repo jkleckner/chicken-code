@@ -91,6 +91,13 @@ enum {
         return nil;
     }
     _nibTopLevelObjects = [topLevel retain];
+
+    /* This is the one window in the project whose nib leaves "release when
+     * closed" at its default of YES; every other one sets it to NO. Now that
+     * _nibTopLevelObjects owns the top-level objects, letting -close release
+     * it as well over-releases it, which shows up as a crash when the
+     * autorelease pool drains just after the window closes. */
+    [window setReleasedWhenClosed:NO];
     [rfbView registerForDraggedTypes:[NSArray arrayWithObjects:NSPasteboardTypeString, NSPasteboardTypeFileURL, nil]];
 
     password = [[connection password] retain];
