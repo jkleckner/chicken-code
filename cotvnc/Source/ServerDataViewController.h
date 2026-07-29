@@ -30,7 +30,7 @@
 @class ServerBase;
 
 @interface ServerDataViewController : NSWindowController
-                                            <ConnectionWaiterDelegate>
+                                            <ConnectionWaiterDelegate, NSControlTextEditingDelegate>
 {
     IBOutlet NSTextField *display;
     IBOutlet NSTextField *displayDescription;
