@@ -28,7 +28,7 @@
 
 @interface ConnectionWaiter(Private)
 
-- (void)errorDidEnd:(NSWindow *)sheet returnCode:(int)returnCode
+- (void)errorDidEnd:(NSWindow *)sheet returnCode:(NSInteger)returnCode
         contextInfo:(void *)info;
 
 @end
@@ -301,13 +301,13 @@
                 @selector(errorDidEnd:returnCode:contextInfo:), NULL, NULL,
                 @"%@", message);
     else {
-        int ret;
+        NSInteger ret;
         ret = NSRunAlertPanel(theAction, message, ok, NULL, NULL, NULL);
         [self errorDidEnd:nil returnCode:ret contextInfo:nil];
     }
 }
 
-- (void)errorDidEnd:(NSWindow *)sheet returnCode:(int)returnCode
+- (void)errorDidEnd:(NSWindow *)sheet returnCode:(NSInteger)returnCode
         contextInfo:(void *)info
 {
     [delegate connectionFailed];

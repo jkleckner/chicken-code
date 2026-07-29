@@ -296,7 +296,7 @@ static ServerDataManager* gInstance = nil;
 
 - (unsigned) serverCount
 {
-	return [mServers count];
+	return (unsigned)[mServers count];
 }
 
 /* Returns the number of saveable servers, i.e. excluding Rendezvous servers */
@@ -331,7 +331,7 @@ static ServerDataManager* gInstance = nil;
 
 - (unsigned) groupCount
 {
-	return [mGroups count];
+	return (unsigned)[mGroups count];
 }
 
 - (NSEnumerator*) getGroupNameEnumerator

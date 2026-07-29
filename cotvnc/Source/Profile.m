@@ -86,7 +86,7 @@ static inline unsigned int
 ButtonNumberToArrayIndex( NSInteger buttonNumber )
 {
 	NSCParameterAssert( buttonNumber == 2 || buttonNumber == 3 );
-	return buttonNumber - 2;
+	return (unsigned)(buttonNumber - 2);
 }
 
 
@@ -406,7 +406,7 @@ ButtonNumberToArrayIndex( NSInteger buttonNumber )
     [dict setObject:[NSNumber numberWithDouble:_tapAndClickTimeout[1]]
              forKey:kProfile_TapAndClickTimeoutForButton3_Key];
 
-    [dict setObject:[NSNumber numberWithInt:pixelFormatIndex]
+    [dict setObject:[NSNumber numberWithInteger:pixelFormatIndex]
              forKey:kProfile_PixelFormat_Key];
     [dict setObject:[NSKeyedArchiver archivedDataWithRootObject:tintFront]
              forKey:kProfile_TintFront_Key];

@@ -94,7 +94,7 @@
             colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:0 bitsPerPixel:0];
 
     unsigned char       *destData = [bitmap bitmapData];
-    int                 rowBytes = [bitmap bytesPerRow];
+    int                 rowBytes = (int)[bitmap bytesPerRow];
 
     /* Extract cursor image and mask from buff */
     for (i=0; i<height; i++) {

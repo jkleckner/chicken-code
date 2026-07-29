@@ -143,7 +143,10 @@ static NSString *kProfileDragEntry = @"net.sourceforge.chicken.ProfileDragEntry"
 
 - (void)formDidChange:(id)sender
 {
-	NSInteger tag, value;
+	/* Popup tags, stepper values and popup indices are all bounded by the
+	 * controls in the nib, so narrowing them to the profile's 32-bit fields is
+	 * safe. Narrow once here, where the value leaves AppKit. */
+	int tag, value;
 	
     Profile* profile = [self _currentProfile];
 	
@@ -151,39 +154,39 @@ static NSString *kProfileDragEntry = @"net.sourceforge.chicken.ProfileDragEntry"
     [profile setCopyRectEnabled:[mEnableCopyRect state]];
     [profile setJpegEncodingEnabled:[mEnableJpegEncoding state]];
     
-    tag = [[mEmulationPopup2 selectedItem] tag];
+    tag = (int)[[mEmulationPopup2 selectedItem] tag];
     [profile setEmulationScenario:tag forButton:2];
     [mEmulationTabView2 selectTabViewItemAtIndex: tag];
-    tag = [[mClickWhileHoldingEmulationModifier2 selectedItem] tag];
+    tag = (int)[[mClickWhileHoldingEmulationModifier2 selectedItem] tag];
     [profile setClickWhileHoldingModifier:tag forButton:2];
-    tag = [[mMultiTapEmulationModifier2 selectedItem] tag];
+    tag = (int)[[mMultiTapEmulationModifier2 selectedItem] tag];
     [profile setMultiTapModifier:tag forButton:2];
     value = [mMultiTapEmulationCountStepper2 intValue];
     [profile setMultiTapCount:value forButton:2];
     [mMultiTapEmulationCountText2 setIntValue: value];
-    tag = [[mTapAndClickEmulationModifier2 selectedItem] tag];
+    tag = (int)[[mTapAndClickEmulationModifier2 selectedItem] tag];
     [profile setTapAndClickModifier:tag forButton:2];
     [profile setTapAndClickTimeout:[mTapAndClickEmulationTimeout2 doubleValue]
                          forButton:2];
     
-    tag = [[mEmulationPopup3 selectedItem] tag];
+    tag = (int)[[mEmulationPopup3 selectedItem] tag];
     [profile setEmulationScenario:tag forButton:3];
     [mEmulationTabView3 selectTabViewItemAtIndex: tag];
-    tag = [[mClickWhileHoldingEmulationModifier3 selectedItem] tag];
+    tag = (int)[[mClickWhileHoldingEmulationModifier3 selectedItem] tag];
     [profile setClickWhileHoldingModifier:tag forButton:3];
-    tag = [[mMultiTapEmulationModifier3 selectedItem] tag];
+    tag = (int)[[mMultiTapEmulationModifier3 selectedItem] tag];
     [profile setMultiTapModifier:tag forButton:3];
     value = [mMultiTapEmulationCountStepper3 intValue];
     [profile setMultiTapCount:value forButton:3];
     [mMultiTapEmulationCountText3 setIntValue: value];
-    tag = [[mTapAndClickEmulationModifier3 selectedItem] tag];
+    tag = (int)[[mTapAndClickEmulationModifier3 selectedItem] tag];
     [profile setTapAndClickModifier:tag forButton:3];
     [profile setTapAndClickTimeout:[mTapAndClickEmulationTimeout3 doubleValue]
                 forButton:3];
     
-    [profile setCommandKeyPreference:[mCommandKey indexOfSelectedItem]];
-    [profile setControlKeyPreference: [mControlKey indexOfSelectedItem]];
-    [profile setAltKeyPreference: [mAltKey indexOfSelectedItem]];
+    [profile setCommandKeyPreference:(int)[mCommandKey indexOfSelectedItem]];
+    [profile setControlKeyPreference: (int)[mControlKey indexOfSelectedItem]];
+    [profile setAltKeyPreference: (int)[mAltKey indexOfSelectedItem]];
     
     [[ProfileDataManager sharedInstance] saveProfile:profile];
 }
@@ -192,7 +195,7 @@ static NSString *kProfileDragEntry = @"net.sourceforge.chicken.ProfileDragEntry"
 - (IBAction)toggleSelectedEncodingEnabled: (id)sender
 {
     Profile *profile = [self _currentProfile];
-    int selectedIndex = [mEncodingTableView selectedRow];
+    int selectedIndex = (int)[mEncodingTableView selectedRow];
     NSParameterAssert ( selectedIndex >= 0 && selectedIndex < NUMENCODINGS );
     
     BOOL wasEnabled = [profile encodingEnabledAtIndex:selectedIndex];
@@ -239,7 +242,7 @@ static NSString *kProfileDragEntry = @"net.sourceforge.chicken.ProfileDragEntry"
 #pragma mark NSTableView Data Source
 
 
-- (int)numberOfRowsInTableView:(NSTableView *)aTableView
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)aTableView
 {
 	if ( mEncodingTableView == aTableView )
 	{
@@ -276,7 +279,7 @@ static NSString *kProfileDragEntry = @"net.sourceforge.chicken.ProfileDragEntry"
 {
 	if ( mProfileTable == [aNotification object] )
 	{
-		int selectedRow = [mProfileTable selectedRow];
+		NSInteger selectedRow = [mProfileTable selectedRow];
 		NSString *profileName = [[self _sortedProfileNames] objectAtIndex: selectedRow];
 		
         [mProfileNameField setStringValue: profileName];
