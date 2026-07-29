@@ -435,16 +435,18 @@ ButtonNumberToRFBButtomMask( unsigned int buttonNumber )
     }
 }
 
-- (void)queueModifierPressed: (unsigned int)modifier timestamp: (NSTimeInterval)timestamp
+- (void)queueModifierPressed: (NSEventModifierFlags)modifier timestamp: (NSTimeInterval)timestamp
 {
-	QueuedEvent *event = [QueuedEvent modifierDownEventWithCharacter: modifier
+	/* Every AppKit modifier flag is defined below bit 31, and the RFB wire
+	 * format carries 32-bit keysyms, so QueuedEvent stores 32 bits. */
+	QueuedEvent *event = [QueuedEvent modifierDownEventWithCharacter: (unsigned int)modifier
 													  timestamp: timestamp];
 	[_pendingEvents addObject: event];
 	[self sendAnyValidEventsToServerNow];
 }
 
 
-- (void)queueModifierReleased: (unsigned int)modifier timestamp: (NSTimeInterval)timestamp
+- (void)queueModifierReleased: (NSEventModifierFlags)modifier timestamp: (NSTimeInterval)timestamp
 {
     if ( kClickWhileHoldingModifierEmulation == [_profile button2EmulationScenario]
 		 && _clickWhileHoldingModifierStillDown[0] 
@@ -459,7 +461,8 @@ ButtonNumberToRFBButtomMask( unsigned int buttonNumber )
 		_clickWhileHoldingModifierStillDown[1] = NO;
 	}
 	
-	QueuedEvent *event = [QueuedEvent modifierUpEventWithCharacter: modifier
+	/* See -queueModifierPressed: on why narrowing to 32 bits is safe here. */
+	QueuedEvent *event = [QueuedEvent modifierUpEventWithCharacter: (unsigned int)modifier
 													timestamp: timestamp];
 	[_pendingEvents addObject: event];
 	[self sendAnyValidEventsToServerNow];

@@ -674,7 +674,7 @@ ButtonNumberToArrayIndex( NSInteger buttonNumber )
 }
 
 - (void)setEmulationScenario:(EventFilterEmulationScenario)scenario
-                   forButton:(NSInteger)button;
+                   forButton:(unsigned)button
 {
     unsigned    index = ButtonNumberToArrayIndex(button);
     _buttonEmulationScenario[index] = scenario;
