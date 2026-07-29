@@ -23,6 +23,30 @@
 
 #import <Foundation/Foundation.h>
 
+/* Number of pixels a framebuffer must allocate to back a framebuffer of
+ * `size`, which is more than size.width * size.height.
+ *
+ * -[FrameBuffer drawRect:at:] hands NSDrawBitmap the *full* framebuffer stride
+ * as bytesPerRow while pointing data[0] at the interior of the buffer, so that
+ * AppKit walks from row to row of the framebuffer itself. NSBitmapImageRep
+ * then materialises its backing store by copying bytesPerRow * pixelsHigh
+ * CONTIGUOUS bytes from that pointer: the trailing padding of the final row is
+ * read even though none of it is ever drawn.
+ *
+ * For a rect ending on the framebuffer's last row that padding lies past the
+ * final pixel -- origin.x pixels past it, to be exact. FrameBufferClipRect
+ * caps origin.x below size.width, so one spare row always covers it.
+ *
+ * Without the spare row the read runs off the end of the calloc'd buffer and,
+ * when the next page happens to be unmapped, segfaults inside _platform_memmove.
+ * That is the FotCotVNC 2026.7 crash; clipping the rectangle alone does not fix
+ * it, because the rectangle was already inside the framebuffer.
+ */
+static inline size_t FrameBufferPixelCapacity(NSSize size)
+{
+    return (size_t)size.width * (size_t)size.height + (size_t)size.width;
+}
+
 /* Clips a framebuffer-space rectangle to the framebuffer's bounds.
  *
  * The caller cannot be trusted to supply an in-range rectangle. RFBView maps

@@ -19,6 +19,7 @@
  */
 
 #import "HighColorFrameBuffer.h"
+#import "FrameBufferClip.h"
 
 typedef	unsigned short			FBColor;
 
@@ -40,7 +41,7 @@ typedef	unsigned short			FBColor;
 		samplesPerPixel = 3;
 		bitsPerColor = 4;
 		[self setPixelFormat:theFormat];
-		pixels = calloc(aSize.width * aSize.height, sizeof(FBColor));
+		pixels = calloc(FrameBufferPixelCapacity(aSize), sizeof(FBColor));
 	}
     return self;
 }

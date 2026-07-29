@@ -52,16 +52,33 @@ static BOOL legacyClip(NSRect *r, NSSize size, int *yshiftOut)
 }
 
 /* Highest byte offset NSDrawBitmap will touch, given a framebuffer-space rect.
- * It reads r.size.height rows at a stride of size.width*bpp, consuming
- * r.size.width*bpp bytes of each row, starting at the rect's origin. */
+ *
+ * NOT (height-1)*stride + width*bpp, which is only the span it *draws*. We
+ * hand AppKit the full framebuffer stride as bytesPerRow while pointing
+ * data[0] into the middle of the buffer, and NSBitmapImageRep materialises its
+ * backing store by copying bytesPerRow * pixelsHigh CONTIGUOUS bytes from that
+ * pointer -- the last row's trailing padding is read even though no part of it
+ * is ever drawn. Verified against a PROT_NONE guard page: a bottom-row rect
+ * with origin.x = 64 faults, the same rect with origin.x = 0 does not.
+ *
+ * That trailing read is what the crash reports show. The faulting address sat
+ * origin.x*bpp bytes past the end of the pixel buffer (1920 bytes = 480 px,
+ * and 24 bytes = 6 px, in the two geometries that crashed). */
 static long lastByteTouched(NSRect r, NSSize size, int bpp)
 {
     long bpr   = (long)size.width * bpp;
     long start = (long)r.origin.y * (long)size.width + (long)r.origin.x;
-    return start * bpp + ((long)r.size.height - 1) * bpr + (long)r.size.width * bpp - 1;
+    return start * bpp + (long)r.size.height * bpr - 1;
 }
 
+/* What the framebuffer must actually allocate -- see FrameBufferPixelCapacity. */
 static long bufferBytes(NSSize size, int bpp)
+{
+    return (long)FrameBufferPixelCapacity(size) * bpp;
+}
+
+/* The logical image, ignoring the slack the drawing path requires. */
+static long imageBytes(NSSize size, int bpp)
 {
     return (long)size.width * (long)size.height * bpp;
 }
@@ -83,9 +100,9 @@ static void test_origin_on_bottom_edge_is_rejected(void)
     BOOL wouldDraw = legacyClip(&legacy, size, &yshift);
     CHECK(wouldDraw, "legacy logic should (buggily) accept this rect");
     long start = (long)legacy.origin.y * (long)size.width + (long)legacy.origin.x;
-    CHECK(start * bpp == bufferBytes(size, bpp),
-          "legacy source pointer should land exactly at end-of-buffer: "
-          "%ld vs %ld", start * bpp, bufferBytes(size, bpp));
+    CHECK(start * bpp == imageBytes(size, bpp),
+          "legacy source pointer should land exactly at end-of-image: "
+          "%ld vs %ld", start * bpp, imageBytes(size, bpp));
 
     /* The fix must reject it outright -- there is nothing to draw. */
     NSRect r = NSMakeRect(0, 128, 512, 5);
@@ -106,7 +123,7 @@ static void test_deep_bottom_overrun_is_clamped(void)
     NSRect legacy = NSMakeRect(0, 120, 512, 20); /* 12 rows past the end */
     int yshift = 0;
     CHECK(legacyClip(&legacy, size, &yshift), "legacy accepts");
-    CHECK(lastByteTouched(legacy, size, bpp) >= bufferBytes(size, bpp),
+    CHECK(lastByteTouched(legacy, size, bpp) >= imageBytes(size, bpp),
           "legacy logic should still overrun after its -=1 clamp");
 
     NSRect r = NSMakeRect(0, 120, 512, 20);
@@ -114,8 +131,8 @@ static void test_deep_bottom_overrun_is_clamped(void)
     CHECK(FrameBufferClipRect(&r, size, &clipped), "fixed logic keeps the visible part");
     CHECK(r.size.height == 8, "expected 8 rows, got %g", r.size.height);
     CHECK(clipped == 12, "expected 12 clipped rows, got %d", clipped);
-    CHECK(lastByteTouched(r, size, bpp) == bufferBytes(size, bpp) - 1,
-          "clamped rect must end exactly at the last byte of the buffer");
+    CHECK(lastByteTouched(r, size, bpp) == imageBytes(size, bpp) - 1,
+          "clamped rect must end exactly at the last byte of the image");
 }
 
 /* ---------------------------------------------------------------------------
@@ -138,8 +155,8 @@ static void test_exact_fit_draws_every_row(void)
     CHECK(FrameBufferClipRect(&r, size, &clipped), "fixed logic accepts a full-size rect");
     CHECK(r.size.height == 128, "expected all 128 rows, got %g", r.size.height);
     CHECK(clipped == 0, "nothing should be clipped, got %d", clipped);
-    CHECK(lastByteTouched(r, size, bpp) == bufferBytes(size, bpp) - 1,
-          "a full-framebuffer rect must touch exactly the whole buffer");
+    CHECK(lastByteTouched(r, size, bpp) == imageBytes(size, bpp) - 1,
+          "a full-framebuffer rect must touch exactly the whole image");
 }
 
 /* ---------------------------------------------------------------------------
@@ -240,6 +257,52 @@ static void test_accepted_rects_never_escape_the_buffer(void)
     }
 }
 
+/* ---------------------------------------------------------------------------
+ * 7. The 2026.7 crash that survived the clip fix. A rect on the framebuffer's
+ *    bottom row with a non-zero x-origin is entirely inside the framebuffer --
+ *    the clip accepts it, correctly -- yet NSDrawBitmap still reads origin.x
+ *    pixels past the last one, because it consumes the final row's full stride.
+ *    Confirmed against a PROT_NONE guard page: this rect faults, the same rect
+ *    at origin.x = 0 does not.
+ * ------------------------------------------------------------------------- */
+static void test_bottom_row_rect_reads_past_the_image(void)
+{
+    NSSize size = NSMakeSize(512, 128);
+    const int bpp = 4;
+
+    NSRect r = NSMakeRect(480, 120, 32, 8);      /* touches the bottom row */
+    int clipped = 0;
+    CHECK(FrameBufferClipRect(&r, size, &clipped),
+          "a rect inside the framebuffer must be accepted");
+    CHECK(clipped == 0, "nothing to clip, got %d", clipped);
+
+    /* The overrun past the logical image is exactly origin.x pixels. This is
+     * the crash: the reports showed 1920 bytes (480 px) and 24 bytes (6 px). */
+    long overrun = lastByteTouched(r, size, bpp) + 1 - imageBytes(size, bpp);
+    CHECK(overrun == 480 * bpp,
+          "expected a %d-byte overrun past the image, got %ld", 480 * bpp, overrun);
+
+    /* ...which the allocation must nonetheless cover. */
+    CHECK(lastByteTouched(r, size, bpp) < bufferBytes(size, bpp),
+          "framebuffer must allocate enough slack for the trailing-row read");
+}
+
+/* The slack must cover the worst case the clip permits, but not more than the
+ * one row that worst case needs. */
+static void test_capacity_reserves_exactly_one_row(void)
+{
+    const NSSize sizes[] = {{512, 128}, {1, 1}, {1920, 1080}, {1512, 982}, {3, 7}};
+
+    for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++) {
+        NSSize s = sizes[i];
+        size_t image = (size_t)s.width * (size_t)s.height;
+        CHECK(FrameBufferPixelCapacity(s) == image + (size_t)s.width,
+              "%gx%g: expected %zu pixels, got %zu",
+              s.width, s.height, image + (size_t)s.width,
+              FrameBufferPixelCapacity(s));
+    }
+}
+
 int main(void)
 {
     @autoreleasepool {
@@ -249,6 +312,8 @@ int main(void)
         test_out_of_range_origins_rejected();
         test_right_edge_clamped();
         test_accepted_rects_never_escape_the_buffer();
+        test_bottom_row_rect_reads_past_the_image();
+        test_capacity_reserves_exactly_one_row();
     }
     printf("%d checks, %d failures\n", checks, failures);
     return failures ? 1 : 0;
