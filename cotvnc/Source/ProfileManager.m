@@ -326,13 +326,16 @@ static NSString *kProfileDragEntry = @"net.sourceforge.chicken.ProfileDragEntry"
 }
 
 
-- (BOOL)tableView:(NSTableView *)tableView writeRows:(NSArray *)rows toPasteboard:(NSPasteboard *)pboard
+- (BOOL)tableView:(NSTableView *)tableView writeRowsWithIndexes:(NSIndexSet *)rowIndexes toPasteboard:(NSPasteboard *)pboard
 {
 	if ( mEncodingTableView == tableView )
 	{
-		NSParameterAssert( [rows count] == 1 );
-		int rowIndex = [[rows objectAtIndex: 0] intValue];
-		
+		NSParameterAssert( [rowIndexes count] == 1 );
+		NSUInteger firstRow = [rowIndexes firstIndex];
+		if ( firstRow == NSNotFound )
+			return NO;
+		int rowIndex = (int)firstRow;
+
         NSData *data = [[NSData alloc] initWithBytes:&rowIndex
                                               length:sizeof(int)];
 		[pboard declareTypes: [NSArray arrayWithObject: kProfileDragEntry] owner: nil];
