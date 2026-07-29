@@ -79,7 +79,6 @@
 
 - (IBAction)showProfileManager:(id)sender;
 
-- (IBAction)connectToServer:(id)sender;
 - (IBAction)cancelConnect: (id)sender;
 
 - (void)connectionSucceeded: (RFBConnection *)theConnection;
