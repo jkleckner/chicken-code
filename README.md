@@ -58,6 +58,26 @@ FotCotVNC has undergone significant modernization to enhance stability, display 
 
 ---
 
+## 👥 Original Main Contributors
+
+The contributors credited in the original *Chicken of the VNC*, whose work this fork builds on:
+
+* **Jason Harris** - Project manager, port to Mac OS X, various code enhancements, documentation
+* **Jared McIntyre** - GUI additions, Rendezvous implementation, additional development
+* **Helmut Maierhofer** - Original implementation for NeXTStep, encoding guru extraordinaire
+* **Kurt Werle** - Development, speed and feature enhancements
+* **Sean Kamath** - Additional development and feedback
+
+---
+
 ## 📄 License
 
 ForkOfTheChickenOfTheVNC is distributed under the GNU General Public License v2.0. See the [LICENSE.md](LICENSE.md) file for details.
+
+### Original copyright notices
+
+Carried over verbatim from the original *About Chicken of the VNC* document, in which "this Readme" refers to that document rather than to this file:
+
+> VNCViewer Copyright (©) 1998-2000 Helmut Maierhofer\
+> This Readme Copyright (©) 2002 Geekspiff and Jason Harris\
+> All Rights Reserved
