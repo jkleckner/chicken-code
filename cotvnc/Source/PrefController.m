@@ -81,7 +81,8 @@ static int const kPrefsVersion = 0x00000002;
 		{
 			// some menu items have changed
 			[defaults removeObjectForKey: @"KeyEquivalentScenarios"];
-			prefsVersion = 0x00000002;
+			// prefsVersion is now 0x00000002; when adding a version 3
+			// migration, re-add the assignment above and test for it here.
 		}
 		
 		if ( badPrefsVersion )
