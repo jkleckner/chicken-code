@@ -47,7 +47,7 @@
 		removedSaveCheckbox = NO;
 		
 		[connectIndicatorText setStringValue:@""];
-		[box setBorderType:NSNoBorder];
+		[box setTransparent:YES];
 
         connectionWaiter = nil;
 		

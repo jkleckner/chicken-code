@@ -375,9 +375,11 @@ enum {
     }
 
     maxviewsize = [NSScrollView frameSizeForContentSize:[rfbView frame].size
-                                  hasHorizontalScroller:horizontalScroll
-                                    hasVerticalScroller:verticalScroll
-                                             borderType:NSNoBorder];
+                                horizontalScrollerClass:horizontalScroll ? [NSScroller class] : Nil
+                                  verticalScrollerClass:verticalScroll ? [NSScroller class] : Nil
+                                             borderType:NSNoBorder
+                                            controlSize:NSControlSizeRegular
+                                          scrollerStyle:NSScrollerStyleLegacy];
     if(aSize.width < maxviewsize.width) {
         horizontalScroll = YES;
     }
@@ -385,9 +387,11 @@ enum {
         verticalScroll = YES;
     }
     maxviewsize = [NSScrollView frameSizeForContentSize:[rfbView frame].size
-                                  hasHorizontalScroller:horizontalScroll
-                                    hasVerticalScroller:verticalScroll
-                                             borderType:NSNoBorder];
+                                horizontalScrollerClass:horizontalScroll ? [NSScroller class] : Nil
+                                  verticalScrollerClass:verticalScroll ? [NSScroller class] : Nil
+                                             borderType:NSNoBorder
+                                            controlSize:NSControlSizeRegular
+                                          scrollerStyle:NSScrollerStyleLegacy];
     winframe = [window frame];
     winframe.size = maxviewsize;
     winframe = [NSWindow frameRectForContentRect:winframe styleMask:[window styleMask]];
@@ -404,7 +408,12 @@ enum {
 
 	screenRect = [[NSScreen mainScreen] visibleFrame];
     wf.origin.x = wf.origin.y = 0;
-    wf.size = [NSScrollView frameSizeForContentSize:_maxSize hasHorizontalScroller:NO hasVerticalScroller:NO borderType:NSNoBorder];
+    wf.size = [NSScrollView frameSizeForContentSize:_maxSize
+                            horizontalScrollerClass:Nil
+                              verticalScrollerClass:Nil
+                                         borderType:NSNoBorder
+                                        controlSize:NSControlSizeRegular
+                                      scrollerStyle:NSScrollerStyleLegacy];
     wf = [NSWindow frameRectForContentRect:wf styleMask:[window styleMask]];
 	if (NSWidth(wf) > NSWidth(screenRect)) {
 		horizontalScroll = YES;
@@ -437,7 +446,9 @@ enum {
 
 
 	contentView = (NSClipView *)[scrollView contentView];
-    [contentView scrollToPoint: [contentView constrainScrollPoint: NSMakePoint(0.0, _maxSize.height - [scrollView contentSize].height)]];
+    NSRect desiredBounds = [contentView bounds];
+    desiredBounds.origin = NSMakePoint(0.0, _maxSize.height - [scrollView contentSize].height);
+    [contentView scrollToPoint: [contentView constrainBoundsRect: desiredBounds].origin];
     [scrollView reflectScrolledClipView: contentView];
 
     [window makeFirstResponder:rfbView];
