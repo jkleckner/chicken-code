@@ -279,8 +279,14 @@ static NSString *kProfileDragEntry = @"net.sourceforge.chicken.ProfileDragEntry"
 {
 	if ( mProfileTable == [aNotification object] )
 	{
-		NSInteger selectedRow = [mProfileTable selectedRow];
-		NSString *profileName = [[self _sortedProfileNames] objectAtIndex: selectedRow];
+		/* selectedRow is -1 with no selection -- an empty table, or a
+		 * selection that has not settled after a delete. Indexing with that
+		 * wraps to a huge NSUInteger and crashes, and -_updateForm asserts on
+		 * a nil profile. -_currentProfileName already applies this guard, so
+		 * go through it rather than repeating the check on a raw row. */
+		NSString *profileName = [self _currentProfileName];
+		if ( nil == profileName )
+			return;
 		
         [mProfileNameField setStringValue: profileName];
         [self _updateBrowserButtons];

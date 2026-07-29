@@ -42,11 +42,26 @@ typedef unsigned int NSUInteger;
 
 - (void)_selectProfileAtIndex: (NSInteger)index
 {
+	NSArray *profileNames = [self _sortedProfileNames];
+	NSInteger profileCount = (NSInteger)[profileNames count];
+
+	if ( 0 == profileCount )
+		return;
+
+	/* -[NSTableView selectedRow] is -1 when nothing is selected, which is what
+	 * -deleteProfile: hands us once the removed row is gone. -initWithIndex:
+	 * raises on the NSNotFound that -1 becomes, and -objectAtIndex: would read
+	 * far off the end, so clamp to a row that exists. There is always at least
+	 * the default profile, which cannot be deleted. */
+	if ( index < 0 )
+		index = 0;
+	else if ( index >= profileCount )
+		index = profileCount - 1;
+
     NSIndexSet  *set = [[NSIndexSet alloc] initWithIndex: index];
     [mProfileTable selectRowIndexes: set byExtendingSelection: NO];
     [set release];
 	
-	NSArray *profileNames = [self _sortedProfileNames];
 	[mProfileNameField setStringValue: [profileNames objectAtIndex: index]];
 	
 	[self _updateForm];
